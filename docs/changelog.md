@@ -2,6 +2,16 @@
 
 ## 2026-04-19
 
+### Added (2nd pass)
+- **Find-in-preview:** Ctrl+F while the Preview tab is active opens a find bar above the webview (GtkSearchEntry + prev/next/close) wired to `WebKitFindController` (`counted-matches` → match count label, `failed-to-find-text` → "Not found"). Enter cycles forward, Shift+Enter backward, Escape closes.
+- **Preview font size setting** (`preview_font_size`, default 14pt) applied as WebKit zoom ratio (size/14). Exposed via spin button in Settings → Editor. Ctrl+scroll on the preview now updates this persistent setting instead of a session-only zoom.
+- **PDF export** (`Export to PDF...` menu item, Ctrl+Shift+P) via `webkit_print_operation_*` + `GtkPageSetup`. Settings dialog gains a new **PDF** tab:
+  - Top/bottom/left/right margins in mm (0–100)
+  - Landscape toggle
+  - Page numbers: None / "Page N" / "Page N of M" — injected as a `@media print { @page { @bottom-center { … } } }` style element into the preview document just before printing.
+  - One-click "Export PDF Now..." button inside the PDF tab.
+- Settings dialog is now split into tabs via `GtkStackSwitcher` (`Editor`, `PDF`).
+
 ### Added
 - `preview_full_width` setting — toggle in Settings dialog to switch the markdown preview between centered (default) and left-aligned / full-width. Persists to `settings.conf`.
 - Ctrl + mouse wheel zoom on the editor (adjusts `font_size`, range 6–72).

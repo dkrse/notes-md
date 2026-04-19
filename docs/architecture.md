@@ -52,7 +52,10 @@ WebKit-based live markdown preview:
 - `push_text` / `preview_queue_update` throttle buffer → preview updates via a 250 ms `g_timeout`.
 - `preview_apply_theme` follows Adwaita's dark mode or the user's theme override.
 - `preview_apply_layout` toggles `html.full` (left-aligned) vs centered.
-- Ctrl+scroll zoom controller on the webview (CAPTURE phase to preempt WebKit's own handler).
+- `preview_apply_font_size` sets WebKit zoom level from `settings.preview_font_size`.
+- Find bar (GtkBox at top of preview page) driven by `WebKitFindController`, shown on Ctrl+F when preview is visible.
+- `preview_export_pdf` injects a `@media print { @page { @bottom-center { content: … } } }` style tag based on `pdf_page_numbers` setting, then drives `webkit_print_operation_print` with a `GtkPageSetup` built from margin/landscape settings.
+- Ctrl+scroll zoom controller on the webview (CAPTURE phase to preempt WebKit's own handler); persists to `preview_font_size`.
 
 ### `ssh.c`
 Wraps the OpenSSH CLI:

@@ -66,6 +66,9 @@ typedef struct {
     gboolean              preview_ready;
     guint                 preview_update_id;
     double                preview_zoom;
+    GtkWidget            *preview_find_bar;
+    GtkWidget            *preview_find_entry;
+    GtkLabel             *preview_find_label;
 } NotesWindow;
 
 guint32      fnv1a_hash(const char *data, gsize len);

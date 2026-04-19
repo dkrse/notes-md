@@ -641,6 +641,7 @@ void notes_window_apply_settings(NotesWindow *win) {
     apply_font_intensity(win);
     apply_source_style(win);
     preview_apply_layout(win);
+    preview_apply_font_size(win);
 }
 
 /* Max bytes to load into GtkTextBuffer — keeps UI responsive */
@@ -907,6 +908,7 @@ static GtkWidget *build_menu_button(void) {
     g_menu_append(menu, "Open File", "win.open-file");
     g_menu_append(menu, "Save", "win.save");
     g_menu_append(menu, "Save As...", "win.save-as");
+    g_menu_append(menu, "Export to PDF...", "win.export-pdf");
     g_menu_append(menu, "Find", "win.find");
     g_menu_append(menu, "Find & Replace", "win.find-replace");
     g_menu_append(menu, "Go to Line", "win.goto-line");

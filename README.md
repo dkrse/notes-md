@@ -12,8 +12,11 @@ GTK 4 / libadwaita markdown editor written in C with live WebKit preview, GtkSou
 - Line numbers, current-line highlight, word-wrap toggle
 - Find/replace with scrollbar markers
 - SSH/SFTP remote file browsing and editing (via OpenSSH ControlMaster)
-- Ctrl + mouse wheel zoom in editor and preview
+- Ctrl + mouse wheel zoom in editor and preview (persisted per-view)
 - Preview alignment: centered or full-width (left-aligned)
+- Preview font size setting (independent from editor)
+- Find-in-preview (Ctrl+F in preview mode) via WebKit find controller
+- PDF export with configurable margins, landscape/portrait, and page numbers
 - Persistent per-user settings and SFTP connection profiles
 
 ## Build

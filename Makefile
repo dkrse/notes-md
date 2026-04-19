@@ -1,5 +1,5 @@
 CC = gcc
-PKGS = libadwaita-1 gtksourceview-5 webkitgtk-6.0
+PKGS = libadwaita-1 gtksourceview-5 webkitgtk-6.0 poppler-glib cairo
 CFLAGS = -std=c17 -Wall -Wextra -O2 -MMD -MP $(shell pkg-config --cflags $(PKGS))
 LDFLAGS = $(shell pkg-config --libs $(PKGS))
 

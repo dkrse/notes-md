@@ -16,6 +16,16 @@ typedef struct {
     gboolean wrap_lines;
     gboolean highlight_syntax;
     gboolean preview_full_width;  /* TRUE = left-aligned; FALSE = centered */
+    int preview_font_size;        /* pt, used as zoom base (size/14) */
+
+    /* PDF export */
+    double   pdf_margin_top;      /* mm */
+    double   pdf_margin_bottom;
+    double   pdf_margin_left;
+    double   pdf_margin_right;
+    gboolean pdf_landscape;
+    char     pdf_page_numbers[16]; /* "none" | "page" | "page_total" */
+
     int window_width;
     int window_height;
     char last_file[2048];

@@ -35,6 +35,13 @@ void settings_load(NotesSettings *s) {
     s->wrap_lines = TRUE;
     s->highlight_syntax = TRUE;
     s->preview_full_width = FALSE;
+    s->preview_font_size = 14;
+    s->pdf_margin_top = 20.0;
+    s->pdf_margin_bottom = 20.0;
+    s->pdf_margin_left = 20.0;
+    s->pdf_margin_right = 20.0;
+    s->pdf_landscape = FALSE;
+    strncpy(s->pdf_page_numbers, "none", sizeof(s->pdf_page_numbers) - 1);
     s->window_width = 700;
     s->window_height = 500;
     s->last_file[0] = '\0';
@@ -85,6 +92,22 @@ void settings_load(NotesSettings *s) {
             s->highlight_syntax = (strcmp(val, "1") == 0);
         else if (strcmp(key, "preview_full_width") == 0)
             s->preview_full_width = (strcmp(val, "1") == 0);
+        else if (strcmp(key, "preview_font_size") == 0) {
+            int v = atoi(val); if (v >= 6 && v <= 72) s->preview_font_size = v;
+        }
+        else if (strcmp(key, "pdf_margin_top") == 0)
+            s->pdf_margin_top = CLAMP(g_ascii_strtod(val, NULL), 0.0, 100.0);
+        else if (strcmp(key, "pdf_margin_bottom") == 0)
+            s->pdf_margin_bottom = CLAMP(g_ascii_strtod(val, NULL), 0.0, 100.0);
+        else if (strcmp(key, "pdf_margin_left") == 0)
+            s->pdf_margin_left = CLAMP(g_ascii_strtod(val, NULL), 0.0, 100.0);
+        else if (strcmp(key, "pdf_margin_right") == 0)
+            s->pdf_margin_right = CLAMP(g_ascii_strtod(val, NULL), 0.0, 100.0);
+        else if (strcmp(key, "pdf_landscape") == 0)
+            s->pdf_landscape = (strcmp(val, "1") == 0);
+        else if (strcmp(key, "pdf_page_numbers") == 0) {
+            if (val[0]) SAFE_COPY(s->pdf_page_numbers, val);
+        }
         else if (strcmp(key, "window_width") == 0) {
             int v = atoi(val); if (v >= 200 && v <= 8192) s->window_width = v;
         } else if (strcmp(key, "window_height") == 0) {
@@ -203,6 +226,18 @@ void settings_save(const NotesSettings *s) {
     fprintf(f, "wrap_lines=%d\n", s->wrap_lines);
     fprintf(f, "highlight_syntax=%d\n", s->highlight_syntax);
     fprintf(f, "preview_full_width=%d\n", s->preview_full_width);
+    fprintf(f, "preview_font_size=%d\n", s->preview_font_size);
+    char buf_mt[32], buf_mb[32], buf_ml[32], buf_mr[32];
+    g_ascii_formatd(buf_mt, sizeof(buf_mt), "%.1f", s->pdf_margin_top);
+    g_ascii_formatd(buf_mb, sizeof(buf_mb), "%.1f", s->pdf_margin_bottom);
+    g_ascii_formatd(buf_ml, sizeof(buf_ml), "%.1f", s->pdf_margin_left);
+    g_ascii_formatd(buf_mr, sizeof(buf_mr), "%.1f", s->pdf_margin_right);
+    fprintf(f, "pdf_margin_top=%s\n", buf_mt);
+    fprintf(f, "pdf_margin_bottom=%s\n", buf_mb);
+    fprintf(f, "pdf_margin_left=%s\n", buf_ml);
+    fprintf(f, "pdf_margin_right=%s\n", buf_mr);
+    fprintf(f, "pdf_landscape=%d\n", s->pdf_landscape);
+    fprintf(f, "pdf_page_numbers=%s\n", s->pdf_page_numbers);
     fprintf(f, "window_width=%d\n", s->window_width);
     fprintf(f, "window_height=%d\n", s->window_height);
     fprintf(f, "last_file=%s\n", s->last_file);
