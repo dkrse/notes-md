@@ -27,6 +27,7 @@ typedef struct {
     guint                 intensity_idle_id;
     guint                 scroll_idle_id;
     guint                 title_idle_id;
+    guint                 search_debounce_id;
     gboolean              dirty;
     gboolean              is_binary;
     gboolean              is_truncated;

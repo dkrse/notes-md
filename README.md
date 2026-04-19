@@ -11,7 +11,7 @@ GTK 4 / libadwaita markdown editor written in C with live WebKit preview, GtkSou
 - Configurable fonts, line spacing, font intensity, themes (light/dark/solarized/monokai/nord/dracula/tokyo-night/catppuccin…)
 - Line numbers, current-line highlight, word-wrap toggle
 - Find/replace with scrollbar markers
-- SSH/SFTP remote file browsing and editing (via OpenSSH ControlMaster)
+- SSH/SFTP remote file browsing and editing (via OpenSSH ControlMaster, **SSH-key auth only**)
 - Ctrl + mouse wheel zoom in editor and preview (persisted per-view)
 - Preview alignment: centered or full-width (left-aligned)
 - Preview font size setting (independent from editor)
@@ -33,9 +33,21 @@ make
 - `~/.config/notes-md/settings.conf` — editor and preview settings
 - `~/.config/notes-md/connections.conf` — SFTP connection profiles
 
+## SSH setup
+
+notes-md uses SSH key authentication (passwords are intentionally not supported — `BatchMode=yes` is always enforced). Set up a key if you don't have one:
+
+```sh
+ssh-keygen -t ed25519
+ssh-copy-id -p 22 user@host
+```
+
+In the SFTP connection dialog, either leave "Use SSH Key" unchecked (tries default keys `~/.ssh/id_*`) or check it and point to a specific key file.
+
 ## Documentation
 
 - [Architecture](docs/architecture.md)
+- [Diagrams](docs/diagrams.md)
 - [Changelog](docs/changelog.md)
 
 ## Author

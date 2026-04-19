@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-04-19 (3rd pass)
+
+### Security
+- **ssh.c:** `ssh_arg_is_safe()` validates host/user — rejects empty, leading `-` (option injection), and control chars / newlines. `ssh_argv_new` returns NULL on invalid input; all callers (`ssh_cat_file`, `ssh_write_file`, remote browse) check and abort.
+- **preview.html CSP** tightened: `object-src 'none'`, `base-uri 'none'`, `frame-src 'none'`, default-src narrowed to `'self' file:`, img-src explicitly allows `https:` + `data:`. `unsafe-inline` / `unsafe-eval` remain (MathJax requires them).
+- **PDF tmp file symlink race fixed:** `pdf_add_page_numbers` now uses `g_mkstemp` + `g_chmod(0600)` instead of predictable `.tmp` suffix.
+- **Password authentication removed from SFTP dialog.** Password field, `password_entry`/`password_row` struct fields, visibility toggling, and clear/reset calls all deleted. Auth is now publickey-only (default keys or user-specified `-i <path>`); `BatchMode=yes` remains enforced. Rationale: no passwords in memory/config, stronger default, simpler code.
+
+### Added
+- **Connect-test stderr surfacing:** `ssh_connect_thread` now captures stderr and appends it to the error dialog, so users see actual SSH errors (`Permission denied (publickey)`, `Host key verification failed`, etc.) instead of just `exit 255`.
+- **Search debouncing:** `on_search_changed` debounces `search_highlight_all` by 150 ms via `search_debounce_id`, cancelled in `on_destroy`. Avoids O(n²) re-highlights on every keystroke for large files.
+
+### Build
+- `Makefile` now links `poppler-glib` + `cairo` (used by PDF page-number post-processing).
+
+---
+
 ## 2026-04-19
 
 ### Added (2nd pass)

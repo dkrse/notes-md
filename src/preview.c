@@ -216,7 +216,15 @@ static void pdf_add_page_numbers(const char *pdf_path, const char *mode) {
     int n_pages = poppler_document_get_n_pages(doc);
     if (n_pages == 0) { g_object_unref(doc); return; }
 
-    char *tmp_path = g_strdup_printf("%s.tmp", pdf_path);
+    char *tmp_path = g_strdup_printf("%s.XXXXXX", pdf_path);
+    int tmp_fd = g_mkstemp(tmp_path);
+    if (tmp_fd < 0) {
+        g_free(tmp_path);
+        g_object_unref(doc);
+        return;
+    }
+    close(tmp_fd);  /* cairo_pdf_surface_create re-opens by path */
+    g_chmod(tmp_path, 0600);
 
     PopplerPage *first = poppler_document_get_page(doc, 0);
     double pw, ph;

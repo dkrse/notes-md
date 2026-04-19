@@ -891,6 +891,10 @@ static void on_destroy(GtkWidget *widget, gpointer data) {
         g_source_remove(win->title_idle_id);
         win->title_idle_id = 0;
     }
+    if (win->search_debounce_id) {
+        g_source_remove(win->search_debounce_id);
+        win->search_debounce_id = 0;
+    }
     gtk_style_context_remove_provider_for_display(
         gdk_display_get_default(),
         GTK_STYLE_PROVIDER(win->css_provider));
@@ -1001,12 +1005,20 @@ static void search_goto_match(NotesWindow *win, int idx) {
     search_update_label(win);
 }
 
-static void on_search_changed(GtkEditable *editable, gpointer data) {
-    (void)editable;
+static gboolean search_debounce_cb(gpointer data) {
     NotesWindow *win = data;
+    win->search_debounce_id = 0;
     search_highlight_all(win);
     if (win->match_count > 0)
         search_goto_match(win, 0);
+    return G_SOURCE_REMOVE;
+}
+
+static void on_search_changed(GtkEditable *editable, gpointer data) {
+    (void)editable;
+    NotesWindow *win = data;
+    if (win->search_debounce_id) g_source_remove(win->search_debounce_id);
+    win->search_debounce_id = g_timeout_add(150, search_debounce_cb, win);
 }
 
 static void on_search_next(GtkWidget *widget, gpointer data) {

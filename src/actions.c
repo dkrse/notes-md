@@ -600,11 +600,9 @@ typedef struct {
     GtkEntry        *port_entry;
     GtkEntry        *user_entry;
     GtkEntry        *path_entry;
-    GtkEntry        *password_entry;
     GtkCheckButton  *use_key_check;
     GtkEntry        *key_entry;
     GtkWidget       *key_browse_btn;
-    GtkWidget       *password_row;
     GtkWidget       *key_row;
     GtkWidget       *key_btn_row;
     int              selected_idx;
@@ -639,8 +637,6 @@ static void sftp_populate_list(SftpCtx *ctx) {
 
 static void sftp_update_auth_visibility(SftpCtx *ctx) {
     gboolean use_key = gtk_check_button_get_active(ctx->use_key_check);
-    gtk_widget_set_visible(ctx->password_row, !use_key);
-    gtk_widget_set_visible(GTK_WIDGET(ctx->password_entry), !use_key);
     gtk_widget_set_visible(ctx->key_row, use_key);
     gtk_widget_set_visible(GTK_WIDGET(ctx->key_entry), use_key);
     gtk_widget_set_visible(ctx->key_btn_row, use_key);
@@ -695,7 +691,6 @@ static void on_conn_selected(GtkListBox *box, GtkListBoxRow *row, gpointer data)
     gtk_editable_set_text(GTK_EDITABLE(ctx->path_entry), c->remote_path);
     gtk_check_button_set_active(ctx->use_key_check, c->use_key);
     gtk_editable_set_text(GTK_EDITABLE(ctx->key_entry), c->key_path);
-    gtk_editable_set_text(GTK_EDITABLE(ctx->password_entry), "");
     sftp_update_auth_visibility(ctx);
 }
 
@@ -749,7 +744,6 @@ static void sftp_clear_form(SftpCtx *ctx) {
     gtk_editable_set_text(GTK_EDITABLE(ctx->port_entry), "22");
     gtk_editable_set_text(GTK_EDITABLE(ctx->user_entry), "");
     gtk_editable_set_text(GTK_EDITABLE(ctx->path_entry), "/");
-    gtk_editable_set_text(GTK_EDITABLE(ctx->password_entry), "");
     gtk_editable_set_text(GTK_EDITABLE(ctx->key_entry), "");
     gtk_check_button_set_active(ctx->use_key_check, FALSE);
     sftp_update_auth_visibility(ctx);
@@ -787,26 +781,35 @@ static void ssh_connect_thread(GTask *task, gpointer src, gpointer data,
     g_ptr_array_add(d->argv, NULL);
 
     char *stdout_buf = NULL;
+    char *stderr_buf = NULL;
     GError *err = NULL;
     gint status = 0;
     gboolean ok = g_spawn_sync(
         NULL, (char **)d->argv->pdata, NULL,
         G_SPAWN_SEARCH_PATH,
-        NULL, NULL, &stdout_buf, NULL, &status, &err);
+        NULL, NULL, &stdout_buf, &stderr_buf, &status, &err);
     g_free(stdout_buf);
 
     if (!ok) {
         g_task_return_new_error(task, G_IO_ERROR, G_IO_ERROR_FAILED,
             "SSH failed: %s", err ? err->message : "unknown");
         if (err) g_error_free(err);
+        g_free(stderr_buf);
         return;
     }
     if (!g_spawn_check_wait_status(status, NULL)) {
         int code = WIFEXITED(status) ? WEXITSTATUS(status) : status;
+        /* Trim trailing whitespace from stderr for cleaner display */
+        if (stderr_buf) {
+            g_strchomp(stderr_buf);
+        }
+        const char *msg = (stderr_buf && stderr_buf[0]) ? stderr_buf : "(no stderr output)";
         g_task_return_new_error(task, G_IO_ERROR, G_IO_ERROR_FAILED,
-            "SSH connection failed (exit %d).\nCheck hostname, credentials, and SSH key.", code);
+            "SSH connection failed (exit %d).\n\n%s", code, msg);
+        g_free(stderr_buf);
         return;
     }
+    g_free(stderr_buf);
     g_task_return_boolean(task, TRUE);
 }
 
@@ -985,14 +988,6 @@ static void on_sftp_dialog(GSimpleAction *action, GVariant *param, gpointer data
     ctx->use_key_check = GTK_CHECK_BUTTON(gtk_check_button_new());
     g_signal_connect(ctx->use_key_check, "toggled", G_CALLBACK(on_use_key_toggled), ctx);
     gtk_grid_attach(GTK_GRID(grid), GTK_WIDGET(ctx->use_key_check), 1, row++, 2, 1);
-
-    GtkWidget *pass_lbl = make_label("Password:");
-    gtk_grid_attach(GTK_GRID(grid), pass_lbl, 0, row, 1, 1);
-    ctx->password_entry = GTK_ENTRY(gtk_entry_new());
-    gtk_entry_set_visibility(ctx->password_entry, FALSE);
-    gtk_widget_set_hexpand(GTK_WIDGET(ctx->password_entry), TRUE);
-    gtk_grid_attach(GTK_GRID(grid), GTK_WIDGET(ctx->password_entry), 1, row++, 2, 1);
-    ctx->password_row = pass_lbl;
 
     GtkWidget *key_lbl = make_label("Key File:");
     gtk_grid_attach(GTK_GRID(grid), key_lbl, 0, row, 1, 1);
@@ -1209,6 +1204,11 @@ static void remote_browse_populate(OpenRemoteCtx *ctx) {
     GPtrArray *av = ssh_argv_new(ctx->win->ssh_host, ctx->win->ssh_user,
                                   ctx->win->ssh_port, ctx->win->ssh_key,
                                   ctx->win->ssh_ctl_path);
+    if (!av) {
+        GtkWidget *lbl = gtk_label_new("(invalid SSH host/user)");
+        gtk_list_box_append(ctx->file_list, lbl);
+        return;
+    }
     g_ptr_array_add(av, g_strdup("--"));
     g_ptr_array_add(av, g_strdup("ls"));
     g_ptr_array_add(av, g_strdup("-1pA"));

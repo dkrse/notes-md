@@ -6,6 +6,20 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
+/* ── Input validation ── */
+
+/* Reject strings that SSH would interpret as options or that contain
+ * newlines/spaces/shell metas. Hosts and usernames are expected to be
+ * alphanumerics plus a few safe characters. */
+static gboolean ssh_arg_is_safe(const char *s) {
+    if (!s || !*s) return FALSE;
+    if (s[0] == '-') return FALSE;  /* would be parsed as ssh option */
+    for (const unsigned char *p = (const unsigned char *)s; *p; p++) {
+        if (*p < 0x20 || *p == 0x7f) return FALSE;  /* control chars, newline */
+    }
+    return TRUE;
+}
+
 /* ── Path helpers ── */
 
 gboolean ssh_path_is_remote(const char *path) {
@@ -24,6 +38,7 @@ const char *ssh_to_remote_path(const char *ssh_mount, const char *ssh_remote_pat
 
 GPtrArray *ssh_argv_new(const char *host, const char *user, int port,
                         const char *key, const char *ctl_path) {
+    if (!ssh_arg_is_safe(host) || !ssh_arg_is_safe(user)) return NULL;
     GPtrArray *av = g_ptr_array_new_with_free_func(g_free);
     g_ptr_array_add(av, g_strdup("ssh"));
     g_ptr_array_add(av, g_strdup("-p"));
@@ -51,6 +66,11 @@ GPtrArray *ssh_argv_new(const char *host, const char *user, int port,
 void ssh_ctl_start(char *ctl_dir, size_t ctl_dir_size,
                    char *ctl_path, size_t ctl_path_size,
                    const char *host, const char *user, int port, const char *key) {
+    if (!ssh_arg_is_safe(host) || !ssh_arg_is_safe(user)) {
+        ctl_dir[0] = '\0';
+        ctl_path[0] = '\0';
+        return;
+    }
     const char *runtime = g_get_user_runtime_dir();
     snprintf(ctl_dir, ctl_dir_size, "%s/notes-ssh-XXXXXX", runtime);
     if (!mkdtemp(ctl_dir)) {
@@ -158,6 +178,7 @@ gboolean ssh_cat_file(const char *host, const char *user, int port,
                       char **out_contents, gsize *out_len,
                       gsize max_file_size) {
     GPtrArray *av = ssh_argv_new(host, user, port, key, ctl_path);
+    if (!av) return FALSE;
     g_ptr_array_add(av, g_strdup("--"));
     g_ptr_array_add(av, g_strdup("cat"));
     g_ptr_array_add(av, g_strdup(remote_path));
@@ -213,6 +234,7 @@ gboolean ssh_write_file(const char *host, const char *user, int port,
                         const char *remote_path,
                         const char *content, gsize len) {
     GPtrArray *av = ssh_argv_new(host, user, port, key, ctl_path);
+    if (!av) return FALSE;
     g_ptr_array_add(av, g_strdup("--"));
     /* Use tee to write stdin to remote file, discard stdout */
     g_ptr_array_add(av, g_strdup("tee"));

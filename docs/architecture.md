@@ -60,8 +60,9 @@ WebKit-based live markdown preview:
 ### `ssh.c`
 Wraps the OpenSSH CLI:
 
+- `ssh_arg_is_safe()` validates host/user inputs — rejects empty strings, leading `-` (would be parsed as an ssh option), and control characters. `ssh_argv_new` returns `NULL` on invalid input; callers abort the operation.
 - `ssh_ctl_start` / `ssh_ctl_stop` manage a per-session `ControlMaster` socket under `$XDG_RUNTIME_DIR/notes-ssh-XXXXXX/ctl` (created with `mkdtemp` so the directory is 0700 and unique).
-- `ssh_argv_new` builds argument vectors for multiplexed `ssh` invocations (`BatchMode=yes`, `StrictHostKeyChecking=accept-new`).
+- `ssh_argv_new` builds argument vectors for multiplexed `ssh` invocations (`BatchMode=yes`, `StrictHostKeyChecking=accept-new`). Publickey-only; no password auth path exists.
 - `ssh_cat_file` / `ssh_write_file` read/write remote files via `cat` / `tee` over the control socket.
 - Path helpers translate between virtual mount paths (`/note-light-sftp-*/…`) and real remote paths.
 
