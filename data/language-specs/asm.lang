@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<language id="asm" name="Assembly" version="2.0" _section="Source">
+  <metadata>
+    <property name="mimetypes">text/x-asm;text/x-assembler</property>
+    <property name="globs">*.asm;*.s;*.S;*.inc</property>
+    <property name="line-comment-start">;</property>
+  </metadata>
+
+  <styles>
+    <style id="comment"    name="Comment"    map-to="def:comment"/>
+    <style id="string"     name="String"     map-to="def:string"/>
+    <style id="keyword"    name="Keyword"    map-to="def:keyword"/>
+    <style id="type"       name="Register"   map-to="def:type"/>
+    <style id="number"     name="Number"     map-to="def:number"/>
+    <style id="preprocessor" name="Directive" map-to="def:preprocessor"/>
+    <style id="label"      name="Label"      map-to="def:function"/>
+  </styles>
+
+  <definitions>
+    <context id="asm" class="no-spell-check">
+      <include>
+        <!-- Line comments: ; and # and // -->
+        <context id="comment-semi" style-ref="comment" end-at-line-end="true" class="comment">
+          <start>;</start>
+        </context>
+        <context id="comment-hash" style-ref="comment" end-at-line-end="true" class="comment">
+          <start>(?&lt;=^)\s*#(?!define|include|ifdef|ifndef|endif|else|elif|undef|if)</start>
+        </context>
+        <context id="comment-line" style-ref="comment" end-at-line-end="true" class="comment">
+          <start>//</start>
+        </context>
+        <context id="comment-block" style-ref="comment" class="comment">
+          <start>/\*</start>
+          <end>\*/</end>
+        </context>
+
+        <!-- Strings -->
+        <context id="string-double" style-ref="string" end-at-line-end="true" class="string">
+          <start>"</start>
+          <end>"</end>
+          <include>
+            <context id="escape" style-ref="def:special-char">
+              <match>\\.</match>
+            </context>
+          </include>
+        </context>
+        <context id="string-single" style-ref="string" end-at-line-end="true" class="string">
+          <start>'</start>
+          <end>'</end>
+        </context>
+
+        <!-- Preprocessor directives -->
+        <context id="preprocessor" style-ref="preprocessor">
+          <match>^\s*#\s*(define|include|ifdef|ifndef|endif|else|elif|undef|if)\b</match>
+        </context>
+
+        <!-- Labels (at start of line, ending with :) -->
+        <context id="label" style-ref="label">
+          <match>^[a-zA-Z_][a-zA-Z0-9_]*:</match>
+        </context>
+
+        <!-- Numbers -->
+        <context id="hex-number" style-ref="number">
+          <match>\b0[xX][0-9a-fA-F]+[hH]?\b</match>
+        </context>
+        <context id="bin-number" style-ref="number">
+          <match>\b0[bB][01]+\b</match>
+        </context>
+        <context id="oct-number" style-ref="number">
+          <match>\b0[oO]?[0-7]+\b</match>
+        </context>
+        <context id="dec-number" style-ref="number">
+          <match>\b[0-9]+[dD]?\b</match>
+        </context>
+        <context id="hex-suffix" style-ref="number">
+          <match>\b[0-9][0-9a-fA-F]*[hH]\b</match>
+        </context>
+
+        <!-- x86 registers -->
+        <context id="registers" style-ref="type">
+          <keyword>rax</keyword><keyword>rbx</keyword><keyword>rcx</keyword><keyword>rdx</keyword>
+          <keyword>rsi</keyword><keyword>rdi</keyword><keyword>rsp</keyword><keyword>rbp</keyword>
+          <keyword>r8</keyword><keyword>r9</keyword><keyword>r10</keyword><keyword>r11</keyword>
+          <keyword>r12</keyword><keyword>r13</keyword><keyword>r14</keyword><keyword>r15</keyword>
+          <keyword>eax</keyword><keyword>ebx</keyword><keyword>ecx</keyword><keyword>edx</keyword>
+          <keyword>esi</keyword><keyword>edi</keyword><keyword>esp</keyword><keyword>ebp</keyword>
+          <keyword>ax</keyword><keyword>bx</keyword><keyword>cx</keyword><keyword>dx</keyword>
+          <keyword>si</keyword><keyword>di</keyword><keyword>sp</keyword><keyword>bp</keyword>
+          <keyword>al</keyword><keyword>bl</keyword><keyword>cl</keyword><keyword>dl</keyword>
+          <keyword>ah</keyword><keyword>bh</keyword><keyword>ch</keyword><keyword>dh</keyword>
+          <keyword>sil</keyword><keyword>dil</keyword><keyword>spl</keyword><keyword>bpl</keyword>
+          <keyword>r8b</keyword><keyword>r9b</keyword><keyword>r10b</keyword><keyword>r11b</keyword>
+          <keyword>r12b</keyword><keyword>r13b</keyword><keyword>r14b</keyword><keyword>r15b</keyword>
+          <keyword>r8w</keyword><keyword>r9w</keyword><keyword>r10w</keyword><keyword>r11w</keyword>
+          <keyword>r12w</keyword><keyword>r13w</keyword><keyword>r14w</keyword><keyword>r15w</keyword>
+          <keyword>r8d</keyword><keyword>r9d</keyword><keyword>r10d</keyword><keyword>r11d</keyword>
+          <keyword>r12d</keyword><keyword>r13d</keyword><keyword>r14d</keyword><keyword>r15d</keyword>
+          <keyword>cs</keyword><keyword>ds</keyword><keyword>es</keyword><keyword>fs</keyword><keyword>gs</keyword><keyword>ss</keyword>
+          <keyword>rip</keyword><keyword>eip</keyword><keyword>ip</keyword>
+          <keyword>rflags</keyword><keyword>eflags</keyword><keyword>flags</keyword>
+          <keyword>cr0</keyword><keyword>cr2</keyword><keyword>cr3</keyword><keyword>cr4</keyword>
+          <keyword>xmm0</keyword><keyword>xmm1</keyword><keyword>xmm2</keyword><keyword>xmm3</keyword>
+          <keyword>xmm4</keyword><keyword>xmm5</keyword><keyword>xmm6</keyword><keyword>xmm7</keyword>
+          <keyword>xmm8</keyword><keyword>xmm9</keyword><keyword>xmm10</keyword><keyword>xmm11</keyword>
+          <keyword>xmm12</keyword><keyword>xmm13</keyword><keyword>xmm14</keyword><keyword>xmm15</keyword>
+          <keyword>ymm0</keyword><keyword>ymm1</keyword><keyword>ymm2</keyword><keyword>ymm3</keyword>
+          <keyword>ymm4</keyword><keyword>ymm5</keyword><keyword>ymm6</keyword><keyword>ymm7</keyword>
+          <keyword>st0</keyword><keyword>st1</keyword><keyword>st2</keyword><keyword>st3</keyword>
+          <keyword>st4</keyword><keyword>st5</keyword><keyword>st6</keyword><keyword>st7</keyword>
+          <!-- ARM registers -->
+          <keyword>r0</keyword><keyword>r1</keyword><keyword>r2</keyword><keyword>r3</keyword>
+          <keyword>r4</keyword><keyword>r5</keyword><keyword>r6</keyword><keyword>r7</keyword>
+          <keyword>lr</keyword><keyword>pc</keyword><keyword>cpsr</keyword><keyword>spsr</keyword>
+          <keyword>x0</keyword><keyword>x1</keyword><keyword>x2</keyword><keyword>x3</keyword>
+          <keyword>x4</keyword><keyword>x5</keyword><keyword>x6</keyword><keyword>x7</keyword>
+          <keyword>x8</keyword><keyword>x9</keyword><keyword>x10</keyword><keyword>x11</keyword>
+          <keyword>x12</keyword><keyword>x13</keyword><keyword>x14</keyword><keyword>x15</keyword>
+          <keyword>x16</keyword><keyword>x17</keyword><keyword>x18</keyword><keyword>x19</keyword>
+          <keyword>x20</keyword><keyword>x21</keyword><keyword>x22</keyword><keyword>x23</keyword>
+          <keyword>x24</keyword><keyword>x25</keyword><keyword>x26</keyword><keyword>x27</keyword>
+          <keyword>x28</keyword><keyword>x29</keyword><keyword>x30</keyword>
+          <keyword>w0</keyword><keyword>w1</keyword><keyword>w2</keyword><keyword>w3</keyword>
+          <keyword>w4</keyword><keyword>w5</keyword><keyword>w6</keyword><keyword>w7</keyword>
+          <keyword>w8</keyword><keyword>w9</keyword><keyword>w10</keyword><keyword>w11</keyword>
+          <keyword>w12</keyword><keyword>w13</keyword><keyword>w14</keyword><keyword>w15</keyword>
+        </context>
+
+        <!-- x86 instructions -->
+        <context id="instructions" style-ref="keyword">
+          <keyword>mov</keyword><keyword>movzx</keyword><keyword>movsx</keyword><keyword>movsxd</keyword>
+          <keyword>lea</keyword><keyword>push</keyword><keyword>pop</keyword>
+          <keyword>add</keyword><keyword>sub</keyword><keyword>mul</keyword><keyword>imul</keyword>
+          <keyword>div</keyword><keyword>idiv</keyword><keyword>inc</keyword><keyword>dec</keyword>
+          <keyword>neg</keyword><keyword>not</keyword>
+          <keyword>and</keyword><keyword>or</keyword><keyword>xor</keyword><keyword>shl</keyword>
+          <keyword>shr</keyword><keyword>sar</keyword><keyword>sal</keyword><keyword>rol</keyword><keyword>ror</keyword>
+          <keyword>cmp</keyword><keyword>test</keyword>
+          <keyword>jmp</keyword><keyword>je</keyword><keyword>jne</keyword><keyword>jz</keyword><keyword>jnz</keyword>
+          <keyword>jg</keyword><keyword>jge</keyword><keyword>jl</keyword><keyword>jle</keyword>
+          <keyword>ja</keyword><keyword>jae</keyword><keyword>jb</keyword><keyword>jbe</keyword>
+          <keyword>jc</keyword><keyword>jnc</keyword><keyword>jo</keyword><keyword>jno</keyword><keyword>js</keyword><keyword>jns</keyword>
+          <keyword>call</keyword><keyword>ret</keyword><keyword>leave</keyword><keyword>enter</keyword>
+          <keyword>nop</keyword><keyword>hlt</keyword><keyword>int</keyword><keyword>syscall</keyword><keyword>sysret</keyword>
+          <keyword>loop</keyword><keyword>loope</keyword><keyword>loopne</keyword>
+          <keyword>cmove</keyword><keyword>cmovne</keyword><keyword>cmovg</keyword><keyword>cmovge</keyword>
+          <keyword>cmovl</keyword><keyword>cmovle</keyword><keyword>cmova</keyword><keyword>cmovae</keyword>
+          <keyword>cmovb</keyword><keyword>cmovbe</keyword>
+          <keyword>sete</keyword><keyword>setne</keyword><keyword>setg</keyword><keyword>setge</keyword>
+          <keyword>setl</keyword><keyword>setle</keyword><keyword>seta</keyword><keyword>setb</keyword>
+          <keyword>rep</keyword><keyword>repe</keyword><keyword>repne</keyword>
+          <keyword>movsb</keyword><keyword>movsw</keyword><keyword>movsd</keyword><keyword>movsq</keyword>
+          <keyword>stosb</keyword><keyword>stosw</keyword><keyword>stosd</keyword><keyword>stosq</keyword>
+          <keyword>lodsb</keyword><keyword>lodsw</keyword><keyword>lodsd</keyword><keyword>lodsq</keyword>
+          <keyword>cmpsb</keyword><keyword>cmpsw</keyword><keyword>cmpsd</keyword><keyword>cmpsq</keyword>
+          <keyword>scasb</keyword><keyword>scasw</keyword><keyword>scasd</keyword><keyword>scasq</keyword>
+          <keyword>xchg</keyword><keyword>bswap</keyword><keyword>cmpxchg</keyword>
+          <keyword>bt</keyword><keyword>bts</keyword><keyword>btr</keyword><keyword>btc</keyword>
+          <keyword>bsf</keyword><keyword>bsr</keyword><keyword>popcnt</keyword><keyword>lzcnt</keyword><keyword>tzcnt</keyword>
+          <keyword>cbw</keyword><keyword>cwde</keyword><keyword>cdqe</keyword>
+          <keyword>cwd</keyword><keyword>cdq</keyword><keyword>cqo</keyword>
+          <keyword>pushf</keyword><keyword>popf</keyword><keyword>pushfq</keyword><keyword>popfq</keyword>
+          <keyword>clc</keyword><keyword>stc</keyword><keyword>cmc</keyword><keyword>cld</keyword><keyword>std</keyword><keyword>cli</keyword><keyword>sti</keyword>
+          <!-- SSE/AVX -->
+          <keyword>movaps</keyword><keyword>movups</keyword><keyword>movss</keyword>
+          <keyword>addss</keyword><keyword>subss</keyword><keyword>mulss</keyword><keyword>divss</keyword>
+          <keyword>addps</keyword><keyword>subps</keyword><keyword>mulps</keyword><keyword>divps</keyword>
+          <keyword>addsd</keyword><keyword>subsd</keyword><keyword>mulsd</keyword><keyword>divsd</keyword>
+          <keyword>sqrtss</keyword><keyword>sqrtsd</keyword><keyword>sqrtps</keyword><keyword>sqrtpd</keyword>
+          <keyword>pxor</keyword><keyword>por</keyword><keyword>pand</keyword><keyword>pandn</keyword>
+          <keyword>cvtsi2ss</keyword><keyword>cvtsi2sd</keyword><keyword>cvtss2si</keyword><keyword>cvtsd2si</keyword>
+          <!-- ARM -->
+          <keyword>ldr</keyword><keyword>str</keyword><keyword>ldp</keyword><keyword>stp</keyword>
+          <keyword>adr</keyword><keyword>adrp</keyword>
+          <keyword>b</keyword><keyword>bl</keyword><keyword>br</keyword><keyword>blr</keyword>
+          <keyword>beq</keyword><keyword>bne</keyword><keyword>blt</keyword><keyword>bgt</keyword><keyword>ble</keyword><keyword>bge</keyword>
+          <keyword>cbz</keyword><keyword>cbnz</keyword><keyword>tbz</keyword><keyword>tbnz</keyword>
+          <keyword>svc</keyword><keyword>wfi</keyword><keyword>dmb</keyword><keyword>dsb</keyword><keyword>isb</keyword>
+          <keyword>madd</keyword><keyword>msub</keyword><keyword>sdiv</keyword><keyword>udiv</keyword>
+          <keyword>lsl</keyword><keyword>lsr</keyword><keyword>asr</keyword>
+          <keyword>csel</keyword><keyword>csinc</keyword><keyword>csinv</keyword><keyword>csneg</keyword>
+          <keyword>movz</keyword><keyword>movk</keyword><keyword>movn</keyword>
+        </context>
+
+        <!-- NASM/MASM/GAS directives -->
+        <context id="directives" style-ref="preprocessor">
+          <keyword>section</keyword><keyword>segment</keyword><keyword>global</keyword><keyword>extern</keyword>
+          <keyword>db</keyword><keyword>dw</keyword><keyword>dd</keyword><keyword>dq</keyword><keyword>dt</keyword>
+          <keyword>resb</keyword><keyword>resw</keyword><keyword>resd</keyword><keyword>resq</keyword>
+          <keyword>equ</keyword><keyword>times</keyword><keyword>incbin</keyword>
+          <keyword>bits</keyword><keyword>org</keyword><keyword>align</keyword>
+          <keyword>byte</keyword><keyword>word</keyword><keyword>dword</keyword><keyword>qword</keyword>
+          <keyword>ptr</keyword><keyword>offset</keyword><keyword>near</keyword><keyword>far</keyword>
+          <keyword>proc</keyword><keyword>endp</keyword><keyword>macro</keyword><keyword>endm</keyword>
+          <!-- GAS directives -->
+          <keyword>\.text</keyword><keyword>\.data</keyword><keyword>\.bss</keyword><keyword>\.rodata</keyword>
+          <keyword>\.global</keyword><keyword>\.globl</keyword><keyword>\.extern</keyword>
+          <keyword>\.byte</keyword><keyword>\.word</keyword><keyword>\.long</keyword><keyword>\.quad</keyword>
+          <keyword>\.ascii</keyword><keyword>\.asciz</keyword><keyword>\.string</keyword>
+          <keyword>\.align</keyword><keyword>\.balign</keyword><keyword>\.p2align</keyword>
+          <keyword>\.section</keyword><keyword>\.type</keyword><keyword>\.size</keyword>
+          <keyword>\.macro</keyword><keyword>\.endm</keyword><keyword>\.set</keyword><keyword>\.equ</keyword>
+          <keyword>\.comm</keyword><keyword>\.lcomm</keyword>
+          <keyword>\.zero</keyword><keyword>\.space</keyword><keyword>\.fill</keyword>
+          <keyword>\.include</keyword><keyword>\.if</keyword><keyword>\.else</keyword><keyword>\.endif</keyword>
+        </context>
+
+      </include>
+    </context>
+  </definitions>
+</language>

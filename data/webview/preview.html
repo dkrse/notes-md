@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Preview</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: file:;">
+<link rel="stylesheet" href="preview.css">
+<script>
+  window.MathJax = {
+    tex: {
+      inlineMath: [['\\(', '\\)']],
+      displayMath: [['\\[', '\\]']],
+      processEscapes: true,
+      packages: {'[+]': ['ams', 'color', 'boldsymbol', 'cancel']}
+    },
+    loader: { load: ['[tex]/ams', '[tex]/color', '[tex]/boldsymbol', '[tex]/cancel'] },
+    chtml: {
+      fontURL: 'mathjax/output/chtml/fonts/woff-v2'
+    },
+    startup: { typeset: false }
+  };
+</script>
+<script src="mathjax/tex-chtml.js"></script>
+<script src="vendor/marked.min.js"></script>
+<script src="vendor/mermaid.min.js"></script>
+<script src="preview.js" defer></script>
+</head>
+<body>
+<div id="content" class="markdown-body"></div>
+</body>
+</html>
