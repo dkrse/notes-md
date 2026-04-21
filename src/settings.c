@@ -38,6 +38,7 @@ void settings_load(NotesSettings *s) {
     s->preview_font_size = 14;
     s->watch_file = TRUE;
     s->disable_gpu = TRUE;
+    strncpy(s->math_engine, "katex", sizeof(s->math_engine) - 1);
     s->pdf_margin_top = 20.0;
     s->pdf_margin_bottom = 20.0;
     s->pdf_margin_left = 20.0;
@@ -101,6 +102,10 @@ void settings_load(NotesSettings *s) {
             s->watch_file = (strcmp(val, "1") == 0);
         else if (strcmp(key, "disable_gpu") == 0)
             s->disable_gpu = (strcmp(val, "1") == 0);
+        else if (strcmp(key, "math_engine") == 0) {
+            if (strcmp(val, "katex") == 0 || strcmp(val, "mathjax") == 0)
+                SAFE_COPY(s->math_engine, val);
+        }
         else if (strcmp(key, "pdf_margin_top") == 0)
             s->pdf_margin_top = CLAMP(g_ascii_strtod(val, NULL), 0.0, 100.0);
         else if (strcmp(key, "pdf_margin_bottom") == 0)
@@ -235,6 +240,7 @@ void settings_save(const NotesSettings *s) {
     fprintf(f, "preview_font_size=%d\n", s->preview_font_size);
     fprintf(f, "watch_file=%d\n", s->watch_file);
     fprintf(f, "disable_gpu=%d\n", s->disable_gpu);
+    fprintf(f, "math_engine=%s\n", s->math_engine);
     char buf_mt[32], buf_mb[32], buf_ml[32], buf_mr[32];
     g_ascii_formatd(buf_mt, sizeof(buf_mt), "%.1f", s->pdf_margin_top);
     g_ascii_formatd(buf_mb, sizeof(buf_mb), "%.1f", s->pdf_margin_bottom);

@@ -89,4 +89,6 @@ html.full .markdown-body {
   border-radius: 4px;
   font-family: monospace;
 }
+.markdown-body .katex { font-size: 1.05em; }
+.markdown-body .katex-display { overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
 mjx-container { font-size: 1.05em !important; }

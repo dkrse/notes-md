@@ -5,7 +5,7 @@ GTK 4 / libadwaita markdown editor written in C with live WebKit preview, GtkSou
 ## Features
 
 - Live markdown preview (WebKit) with selectable themes
-- MathJax math rendering (`$…$`, `$$…$$`, `\(…\)`, `\[…\]`)
+- Math rendering (`$…$`, `$$…$$`, `\(…\)`, `\[…\]`) — switchable KaTeX (default, synchronous, reliable on software WebKit) or MathJax (richer LaTeX, async typeset via marked tokenizer extensions so backslash delimiters survive CommonMark escape)
 - Mermaid diagram rendering in fenced `mermaid` code blocks
 - Syntax highlighting via GtkSourceView 5 (editor) and highlight.js (preview)
 - Configurable fonts, line spacing, font intensity, themes (light/dark/solarized/monokai/nord/dracula/tokyo-night/catppuccin…)

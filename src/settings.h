@@ -19,6 +19,7 @@ typedef struct {
     int preview_font_size;        /* pt, used as zoom base (size/14) */
     gboolean watch_file;          /* reload file (and preview) when it changes on disk */
     gboolean disable_gpu;         /* force WebKit software rendering (workaround for broken GPU drivers) */
+    char     math_engine[16];     /* "katex" or "mathjax" */
 
     /* PDF export */
     double   pdf_margin_top;      /* mm */

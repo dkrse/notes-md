@@ -6,21 +6,29 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self' file:; script-src 'self' file: 'unsafe-inline' 'unsafe-eval'; style-src 'self' file: 'unsafe-inline'; img-src 'self' file: data: https:; font-src 'self' file: data:; object-src 'none'; base-uri 'none'; frame-src 'none';">
 <link rel="stylesheet" href="preview.css">
 <script>
-  window.MathJax = {
-    tex: {
-      inlineMath: [['\\(', '\\)']],
-      displayMath: [['\\[', '\\]']],
-      processEscapes: true,
-      packages: {'[+]': ['ams', 'color', 'boldsymbol', 'cancel']}
-    },
-    loader: { load: ['[tex]/ams', '[tex]/color', '[tex]/boldsymbol', '[tex]/cancel'] },
-    chtml: {
-      fontURL: 'mathjax/output/chtml/fonts/woff-v2'
-    },
-    startup: { typeset: false }
-  };
+(function () {
+  var params = new URLSearchParams(location.search);
+  var engine = (params.get('engine') || 'katex').toLowerCase();
+  window.nmdEngine = engine;
+  if (engine === 'mathjax') {
+    window.MathJax = {
+      tex: {
+        inlineMath: [['\\(', '\\)']],
+        displayMath: [['\\[', '\\]']],
+        processEscapes: true,
+        packages: { '[+]': ['ams', 'color', 'boldsymbol', 'cancel'] }
+      },
+      loader: { load: ['[tex]/ams', '[tex]/color', '[tex]/boldsymbol', '[tex]/cancel'] },
+      chtml: { fontURL: 'mathjax/output/chtml/fonts/woff-v2' },
+      startup: { typeset: false }
+    };
+    document.write('<script src="mathjax/tex-chtml.js"><\/script>');
+  } else {
+    document.write('<link rel="stylesheet" href="katex/katex.min.css">');
+    document.write('<script src="katex/katex.min.js"><\/script>');
+  }
+})();
 </script>
-<script src="mathjax/tex-chtml.js"></script>
 <script src="vendor/marked.min.js"></script>
 <script src="vendor/mermaid.min.js"></script>
 <script src="preview.js" defer></script>

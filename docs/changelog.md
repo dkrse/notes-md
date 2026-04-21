@@ -1,11 +1,23 @@
 # Changelog
 
+## 2026-04-21 (2nd pass)
+
+### Fixed
+- **MathJax output regression (0.2.1 → fix).** The 0.2.1 refactor introduced a KaTeX path and rewrote the MathJax path to pre-process `$…$` / `$$…$$` → `\(…\)` / `\[…\]` *before* `marked.parse()`. Under CommonMark/GFM, `\[ \] \( \)` are valid ASCII-punctuation backslash-escapes: marked swallowed the backslashes, MathJax then saw plain `[…]` / `(…)` in the DOM, `typesetPromise` resolved with zero `mjx-container` elements, and formulas stayed as raw text. Restored the 0.2 technique: register `mathBlock` / `mathInline` as marked extensions so math is captured in the tokenizer *before* escape processing, and register the mermaid-aware renderer once globally via `marked.use({ renderer })` — passing a fresh renderer per call to `marked.parse(..., { renderer })` overwrote the extension renderers in newer marked versions.
+- **MathJax typeset hang under `POLICY_NEVER`.** `data/webview/mathjax/output/svg/fonts/tex.js` added as an empty stub. With `disable_gpu=1` (required on nvidia/Wayland) the `tex-chtml` bundle resolves a path to `output/svg/fonts/tex.js` while initialising the `color`/`boldsymbol`/`cancel` extensions. The file is absent from the vendored tree; the HTTP fetch 404s; `MathJax.loader.load` rejects; `mathjax.retryAfter()` awaits the rejected promise and never resolves; `typesetPromise` hangs forever. The stub satisfies the fetch with a no-op so the loader proceeds — CHTML output is already registered by the bundle.
+
 ## 2026-04-21
 
 ### Added
 - **External file watch** (`watch_file` setting, default on): `GFileMonitor` attached in `start_file_watch` whenever a local file is loaded. On `CHANGES_DONE_HINT` / `CREATED` / `RENAMED` the change is debounced 150 ms, then `reload_with_cursor` re-reads the file and restores the cursor line. Skipped when the buffer is dirty (preserves in-progress edits) or when the on-disk hash matches `original_hash` (filters out self-save echoes). SFTP mounts are excluded. Toggle in Settings → Editor: "Reload on File Change".
 - **Preview GPU compositing toggle** (`disable_gpu` setting, default on): when set, `webkit_settings_set_hardware_acceleration_policy(…NEVER)` forces software rendering — workaround for nvidia/Wayland GBM buffer failures that otherwise leave the preview blank even though the DOM is populated. Toggle in Settings → Editor: "Disable Preview GPU" (requires app restart to apply).
-- **MathJax force-repaint** after `typesetPromise` resolves: `preview.js` toggles `el.style.display = 'none' / ''` with a forced reflow in between. Without this, software-rendered WebKit leaves off-screen math blocks unpainted until scrolled into view.
+
+### Changed
+- **Math engine is now selectable** (`math_engine` setting: `katex` | `mathjax`, default `katex`).
+  - **KaTeX** (vendored at `data/webview/katex/`, ~290 KB): synchronous `katex.renderToString` — `el.innerHTML = …` is the single layout point and repaint is consistent even on software-rendered WebKit. Default, recommended for the nvidia/Wayland path where MathJax CHTML left off-screen formulas unpainted until scrolled.
+  - **MathJax** (vendored at `data/webview/mathjax/`, ~3.9 MB): async `typesetPromise` — richer LaTeX (auto linebreak for displays, `mhchem`, `\newcommand`, full AMS). Followed by a `display:none` → reflow → `display:''` toggle in `preview.js` as a best-effort off-screen repaint fix.
+  - `preview.html` is now a minimal stub; `preview.js` bootstraps the chosen engine dynamically based on the `?engine=` query param set by `preview.c` from `settings.math_engine`. Switching engines requires an app restart.
+  - Dropdown in Settings → Editor: "Math Engine" (KaTeX / MathJax).
 
 ### Fixed
 - **`snprintf` self-alias UB in `notes_window_load_file`**: when the caller passes `win->settings.last_file` as `path` (the startup restore path), the line `snprintf(win->settings.last_file, n, "%s", path)` performs an overlapping copy where source and destination are the same buffer. On glibc this zeroes the buffer. Subsequent `start_file_watch(win, path)` saw an empty string and never attached a monitor. Fix: monitor binds to `win->current_file`, which is copied into a separate buffer immediately before.

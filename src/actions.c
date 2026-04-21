@@ -341,6 +341,16 @@ static void on_disable_gpu_toggled(GtkCheckButton *btn, gpointer data) {
     win->settings.disable_gpu = gtk_check_button_get_active(btn);
 }
 
+static void on_math_engine_changed(GtkDropDown *dd, GParamSpec *p, gpointer data) {
+    (void)p;
+    NotesWindow *win = data;
+    static const char *engines[] = {"katex", "mathjax"};
+    guint idx = gtk_drop_down_get_selected(dd);
+    if (idx < 2)
+        snprintf(win->settings.math_engine, sizeof(win->settings.math_engine),
+                 "%s", engines[idx]);
+}
+
 static void on_preview_font_size_changed(GtkSpinButton *btn, gpointer data) {
     NotesWindow *win = data;
     win->settings.preview_font_size = (int)gtk_spin_button_get_value(btn);
@@ -544,6 +554,15 @@ static void on_settings(GSimpleAction *action, GVariant *param, gpointer data) {
     gtk_check_button_set_active(GTK_CHECK_BUTTON(dg_check), win->settings.disable_gpu);
     g_signal_connect(dg_check, "toggled", G_CALLBACK(on_disable_gpu_toggled), win);
     gtk_grid_attach(GTK_GRID(grid), dg_check, 1, row++, 1, 1);
+
+    /* Math engine (applies on restart) */
+    gtk_grid_attach(GTK_GRID(grid), gtk_label_new("Math Engine:"), 0, row, 1, 1);
+    const char *engine_labels[] = {"KaTeX (fast, sync)", "MathJax (richer LaTeX)", NULL};
+    GtkWidget *me_dd = gtk_drop_down_new_from_strings(engine_labels);
+    guint me_idx = (strcmp(win->settings.math_engine, "mathjax") == 0) ? 1 : 0;
+    gtk_drop_down_set_selected(GTK_DROP_DOWN(me_dd), me_idx);
+    g_signal_connect(me_dd, "notify::selected", G_CALLBACK(on_math_engine_changed), win);
+    gtk_grid_attach(GTK_GRID(grid), me_dd, 1, row++, 1, 1);
 
     /* ── PDF tab ── */
     GtkWidget *pdf_grid = gtk_grid_new();

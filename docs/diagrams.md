@@ -107,10 +107,18 @@ sequenceDiagram
     P->>P: get_text + json_escape
     P->>WK: evaluate_javascript:<br/>nmdRender(text)
     WK->>JS: render()
-    JS->>JS: marked.parse → innerHTML
-    JS->>JS: mermaid.render each block
-    JS->>JS: MathJax typeset
-    JS->>JS: display:none → reflow → display:''<br/>(force repaint for software renderer)
+    alt engine = katex (default, sync)
+        JS->>JS: protect $..$ / $$..$$ / \(..\) / \[..\] as %%NMD_…%% placeholders
+        JS->>JS: marked.parse (placeholders survive untouched)
+        JS->>JS: katex.renderToString (sync) → substitute back
+        JS->>JS: el.innerHTML = final html (single layout point)
+    else engine = mathjax (richer LaTeX, async)
+        JS->>JS: marked.parse with mathBlock/mathInline extensions<br/>(tokenizer emits \[..\] / \(..\) — backslashes survive escape)
+        JS->>JS: el.innerHTML = html
+        JS->>JS: await MathJax.typesetPromise([el])<br/>(stub at output/svg/fonts/tex.js unblocks loader fetch)
+        JS->>JS: display:none → reflow → display:''<br/>(off-screen repaint nudge)
+    end
+    JS->>JS: mermaid.render each block (async, per node)
 ```
 
 ## External file reload (watch_file)

@@ -87,7 +87,12 @@ Flat key=value config files in `~/.config/notes-md/`:
 `save_local_file` / `save_remote_file` write bytes, recompute `original_hash`, clear `dirty`, update title.
 
 ### Preview
-Every buffer change in preview-visible mode schedules `update_timeout_cb` (250 ms debounce) → JSON-escape buffer text → `webkit_web_view_evaluate_javascript("window.nmdRender(...)")`. `nmdRender` runs `marked` + Mermaid + MathJax, and on the software-rendering path ends with a `display:none` → reflow → `display:''` toggle so off-screen math blocks are painted up-front instead of only when scrolled into view.
+Every buffer change in preview-visible mode schedules `update_timeout_cb` (250 ms debounce) → JSON-escape buffer text → `webkit_web_view_evaluate_javascript("window.nmdRender(...)")`. `nmdRender` dispatches to the math engine picked at boot:
+
+- **KaTeX path**: protect math spans with `%%NMD_…%%` placeholders, run `marked`, synchronously substitute `katex.renderToString` HTML back in, single `el.innerHTML = …` write, then Mermaid. One layout point — off-screen blocks paint consistently on software-rendered WebKit.
+- **MathJax path**: register `mathBlock` / `mathInline` as marked extensions (tokenizer-level capture, so CommonMark backslash-escape can't swallow `\[ \]` / `\( \)` delimiters), run `marked.parse` (extensions emit `\[…\]` / `\(…\)` into the HTML), set `el.innerHTML`, run Mermaid, then `await MathJax.typesetPromise([el])`. Followed by a `display:none` → reflow → `display:''` repaint nudge to compensate for async typeset on software WebKit. A stub file at `data/webview/mathjax/output/svg/fonts/tex.js` satisfies a dependency fetch that the `tex-chtml` bundle issues under `POLICY_NEVER` — without it `MathJax.loader.load` rejects and `typesetPromise` hangs forever.
+
+The engine is selected from `settings.math_engine` and passed to the webview via the `?engine=` URL query; `preview.js` reads it on bootstrap and loads only the chosen library.
 
 ### External file reload
 `GFileMonitor` fires `CHANGES_DONE_HINT` / `CREATED` / `RENAMED` → 150 ms debounce → `reload_with_cursor`. Reload is skipped when the buffer is dirty (preserves edits) or when `fnv1a_hash(on_disk) == original_hash` (self-save echo). Cursor line is captured before the reload and restored after.
@@ -108,6 +113,7 @@ Every buffer change in preview-visible mode schedules `update_timeout_cb` (250 m
 
 `data/webview/` ships next to the executable (`../data/webview` relative to `build/notes-md`):
 
-- `preview.html`, `preview.css`, `preview.js` — markdown renderer UI
-- `mathjax/` — vendored MathJax (inline/display math in preview)
-- `vendor/` — markdown-it, highlight.js, and Mermaid for fenced diagram blocks
+- `preview.html`, `preview.css`, `preview.js` — markdown renderer UI (`preview.js` bootstraps the math engine picked via `?engine=` query)
+- `katex/` — vendored KaTeX (`katex.min.js`, `katex.min.css`, `fonts/*.woff2`) — synchronous math renderer (default)
+- `mathjax/` — vendored MathJax (tex-chtml bundle + CHTML fonts + TeX extensions) — optional, richer LaTeX, async typeset. Includes a no-op stub at `output/svg/fonts/tex.js` to unblock a loader-path resolution the bundle issues under `POLICY_NEVER`; see changelog.
+- `vendor/` — marked, highlight.js, and Mermaid for fenced diagram blocks

@@ -402,8 +402,8 @@ void preview_init(NotesWindow *win) {
     webkit_settings_set_allow_universal_access_from_file_urls(wset, TRUE);
     webkit_settings_set_enable_write_console_messages_to_stdout(wset, TRUE);
     if (win->settings.disable_gpu) {
-        /* Workaround for broken GPU drivers (e.g. nvidia/Wayland GBM buffer failures)
-           — forces software rendering at the cost of off-screen repaint snappiness. */
+        /* Required on nvidia/Wayland systems where GBM buffer allocation
+           fails — without this the WebView renders a blank page. */
         webkit_settings_set_hardware_acceleration_policy(wset,
             WEBKIT_HARDWARE_ACCELERATION_POLICY_NEVER);
     }
@@ -413,7 +413,10 @@ void preview_init(NotesWindow *win) {
     g_object_unref(wset);
     g_signal_connect(wv, "load-changed", G_CALLBACK(on_load_changed), win);
 
-    char *uri = g_strdup_printf("file://%s/preview.html", dir);
+    const char *engine = (win->settings.math_engine[0]
+                          && strcmp(win->settings.math_engine, "mathjax") == 0)
+                         ? "mathjax" : "katex";
+    char *uri = g_strdup_printf("file://%s/preview.html?engine=%s", dir, engine);
     webkit_web_view_load_uri(WEBKIT_WEB_VIEW(wv), uri);
     g_free(uri); g_free(dir);
 
