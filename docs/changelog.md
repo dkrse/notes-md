@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-04-21
+
+### Added
+- **External file watch** (`watch_file` setting, default on): `GFileMonitor` attached in `start_file_watch` whenever a local file is loaded. On `CHANGES_DONE_HINT` / `CREATED` / `RENAMED` the change is debounced 150 ms, then `reload_with_cursor` re-reads the file and restores the cursor line. Skipped when the buffer is dirty (preserves in-progress edits) or when the on-disk hash matches `original_hash` (filters out self-save echoes). SFTP mounts are excluded. Toggle in Settings → Editor: "Reload on File Change".
+- **Preview GPU compositing toggle** (`disable_gpu` setting, default on): when set, `webkit_settings_set_hardware_acceleration_policy(…NEVER)` forces software rendering — workaround for nvidia/Wayland GBM buffer failures that otherwise leave the preview blank even though the DOM is populated. Toggle in Settings → Editor: "Disable Preview GPU" (requires app restart to apply).
+- **MathJax force-repaint** after `typesetPromise` resolves: `preview.js` toggles `el.style.display = 'none' / ''` with a forced reflow in between. Without this, software-rendered WebKit leaves off-screen math blocks unpainted until scrolled into view.
+
+### Fixed
+- **`snprintf` self-alias UB in `notes_window_load_file`**: when the caller passes `win->settings.last_file` as `path` (the startup restore path), the line `snprintf(win->settings.last_file, n, "%s", path)` performs an overlapping copy where source and destination are the same buffer. On glibc this zeroes the buffer. Subsequent `start_file_watch(win, path)` saw an empty string and never attached a monitor. Fix: monitor binds to `win->current_file`, which is copied into a separate buffer immediately before.
+
+---
+
 ## 2026-04-19 (3rd pass)
 
 ### Security

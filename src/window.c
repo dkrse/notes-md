@@ -11,6 +11,9 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+static void start_file_watch(NotesWindow *win, const char *path);
+static void stop_file_watch(NotesWindow *win);
+
 /* FNV-1a 32-bit hash for fast dirty detection */
 guint32 fnv1a_hash(const char *data, gsize len) {
     guint32 h = 2166136261u;
@@ -642,6 +645,15 @@ void notes_window_apply_settings(NotesWindow *win) {
     apply_source_style(win);
     preview_apply_layout(win);
     preview_apply_font_size(win);
+
+    /* React to watch_file toggle changes */
+    if (win->settings.watch_file) {
+        if (!win->file_monitor && win->current_file[0] != '\0' &&
+            !ssh_path_is_remote(win->current_file))
+            start_file_watch(win, win->current_file);
+    } else {
+        stop_file_watch(win);
+    }
 }
 
 /* Max bytes to load into GtkTextBuffer — keeps UI responsive */
@@ -658,6 +670,103 @@ static const char *human_size(gsize bytes) {
     else
         snprintf(buf, sizeof(buf), "%lu B", (unsigned long)bytes);
     return buf;
+}
+
+/* ── External file watch ── */
+
+static void stop_file_watch(NotesWindow *win) {
+    if (win->reload_debounce_id) {
+        g_source_remove(win->reload_debounce_id);
+        win->reload_debounce_id = 0;
+    }
+    if (win->file_monitor) {
+        g_file_monitor_cancel(win->file_monitor);
+        g_object_unref(win->file_monitor);
+        win->file_monitor = NULL;
+    }
+}
+
+static void reload_with_cursor(NotesWindow *win) {
+    if (win->current_file[0] == '\0') return;
+    if (win->dirty) return;  /* don't clobber user's in-progress edits */
+
+    /* Skip if on-disk content matches what we loaded — avoids self-reload after our own save */
+    struct stat st;
+    if (g_stat(win->current_file, &st) != 0) return;
+    if (win->original_content) {
+        gsize cur_len = strlen(win->original_content);
+        if ((gsize)st.st_size == cur_len) {
+            FILE *fp = fopen(win->current_file, "rb");
+            if (fp) {
+                char *buf = g_malloc(cur_len + 1);
+                gsize r = fread(buf, 1, cur_len, fp);
+                fclose(fp);
+                gboolean same = (r == cur_len &&
+                                 fnv1a_hash(buf, cur_len) == win->original_hash);
+                g_free(buf);
+                if (same) return;
+            }
+        }
+    }
+
+    /* Preserve cursor line so reload doesn't jump the user to the top */
+    GtkTextIter iter;
+    GtkTextMark *mark = gtk_text_buffer_get_insert(win->buffer);
+    gtk_text_buffer_get_iter_at_mark(win->buffer, &iter, mark);
+    int saved_line = gtk_text_iter_get_line(&iter);
+
+    char path_copy[2048];
+    snprintf(path_copy, sizeof(path_copy), "%s", win->current_file);
+    notes_window_load_file(win, path_copy);
+
+    int lines = gtk_text_buffer_get_line_count(win->buffer);
+    if (saved_line >= lines) saved_line = lines - 1;
+    if (saved_line < 0) saved_line = 0;
+    GtkTextIter restore;
+    gtk_text_buffer_get_iter_at_line(win->buffer, &restore, saved_line);
+    gtk_text_buffer_place_cursor(win->buffer, &restore);
+}
+
+static gboolean reload_debounce_cb(gpointer user) {
+    NotesWindow *win = user;
+    win->reload_debounce_id = 0;
+    if (win->settings.watch_file)
+        reload_with_cursor(win);
+    return G_SOURCE_REMOVE;
+}
+
+static void on_file_monitor_changed(GFileMonitor *mon, GFile *file, GFile *other,
+                                    GFileMonitorEvent ev, gpointer user) {
+    (void)mon; (void)file; (void)other;
+    NotesWindow *win = user;
+    if (!win->settings.watch_file) return;
+    if (ev != G_FILE_MONITOR_EVENT_CHANGES_DONE_HINT &&
+        ev != G_FILE_MONITOR_EVENT_CREATED &&
+        ev != G_FILE_MONITOR_EVENT_RENAMED)
+        return;
+
+    /* Coalesce rapid bursts (editors that save via tmp+rename often fire multiple events) */
+    if (win->reload_debounce_id)
+        g_source_remove(win->reload_debounce_id);
+    win->reload_debounce_id = g_timeout_add(150, reload_debounce_cb, win);
+}
+
+static void start_file_watch(NotesWindow *win, const char *path) {
+    stop_file_watch(win);
+    if (!win->settings.watch_file) return;
+    if (!path || path[0] == '\0') return;
+    if (ssh_path_is_remote(path)) return;  /* SFTP mount — skip */
+
+    GFile *gf = g_file_new_for_path(path);
+    GError *err = NULL;
+    GFileMonitor *mon = g_file_monitor_file(gf, G_FILE_MONITOR_WATCH_HARD_LINKS, NULL, &err);
+    g_object_unref(gf);
+    if (!mon) {
+        if (err) { g_warning("file monitor: %s", err->message); g_error_free(err); }
+        return;
+    }
+    g_signal_connect(mon, "changed", G_CALLBACK(on_file_monitor_changed), win);
+    win->file_monitor = mon;
 }
 
 void notes_window_load_file(NotesWindow *win, const char *path) {
@@ -773,6 +882,11 @@ void notes_window_load_file(NotesWindow *win, const char *path) {
         update_line_numbers(win->buffer, win);
     update_line_highlights(win);
     apply_font_intensity(win);
+
+    /* (Re)attach external file monitor for this path.
+       Use current_file (not `path`), because when `path` aliases
+       win->settings.last_file, the earlier snprintf self-copy trashes it. */
+    start_file_watch(win, win->current_file);
 
     settings_save(&win->settings);
 }
@@ -895,6 +1009,7 @@ static void on_destroy(GtkWidget *widget, gpointer data) {
         g_source_remove(win->search_debounce_id);
         win->search_debounce_id = 0;
     }
+    stop_file_watch(win);
     gtk_style_context_remove_provider_for_display(
         gdk_display_get_default(),
         GTK_STYLE_PROVIDER(win->css_provider));

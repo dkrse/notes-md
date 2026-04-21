@@ -80,6 +80,11 @@
         if (MathJax.typesetClear) MathJax.typesetClear([el]);
         try { await MathJax.typesetPromise([el]); }
         catch (e) { /* swallow; leave raw */ }
+        // Force full repaint after typeset — software-rendered WebKit otherwise
+        // leaves off-screen math blocks unpainted until scrolled into view.
+        el.style.display = 'none';
+        void el.offsetHeight;
+        el.style.display = '';
       }
     } finally {
       rendering = false;

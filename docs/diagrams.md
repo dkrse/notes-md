@@ -110,6 +110,35 @@ sequenceDiagram
     JS->>JS: marked.parse → innerHTML
     JS->>JS: mermaid.render each block
     JS->>JS: MathJax typeset
+    JS->>JS: display:none → reflow → display:''<br/>(force repaint for software renderer)
+```
+
+## External file reload (watch_file)
+
+```mermaid
+sequenceDiagram
+    participant FS as filesystem
+    participant M as GFileMonitor
+    participant W as window.c
+    participant B as GtkTextBuffer
+    participant P as preview.c
+    Note over M: attached in start_file_watch<br/>(skipped for SFTP mounts)
+    FS-->>M: inotify event
+    M->>W: changed signal<br/>(CHANGES_DONE_HINT / CREATED / RENAMED)
+    W->>W: 150 ms debounce
+    Note over W: reload_with_cursor
+    alt buffer dirty
+        W-->>W: skip (preserve user edits)
+    else hash matches original_hash
+        W-->>W: skip (self-save echo)
+    else
+        W->>W: save cursor line
+        W->>W: notes_window_load_file (current_file)
+        W->>B: set_text (buffer "changed")
+        B->>P: on_buffer_changed_preview
+        P->>P: preview_queue_update
+        W->>W: restore cursor line
+    end
 ```
 
 ## Find-in-preview

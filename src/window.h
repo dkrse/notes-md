@@ -34,6 +34,10 @@ typedef struct {
     char                 *original_content;
     guint32               original_hash;
 
+    /* External file watch */
+    GFileMonitor         *file_monitor;
+    guint                 reload_debounce_id;
+
     /* SSH/SFTP state */
     char                  ssh_host[256];
     char                  ssh_user[128];

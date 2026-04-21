@@ -17,6 +17,8 @@ typedef struct {
     gboolean highlight_syntax;
     gboolean preview_full_width;  /* TRUE = left-aligned; FALSE = centered */
     int preview_font_size;        /* pt, used as zoom base (size/14) */
+    gboolean watch_file;          /* reload file (and preview) when it changes on disk */
+    gboolean disable_gpu;         /* force WebKit software rendering (workaround for broken GPU drivers) */
 
     /* PDF export */
     double   pdf_margin_top;      /* mm */

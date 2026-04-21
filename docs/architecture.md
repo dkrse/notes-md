@@ -33,6 +33,7 @@ Owns the `NotesWindow` struct and the majority of UI construction:
 - Scrollbar-marker overlay (`draw_scrollbar_markers`) for search matches.
 - Theme/CSS application pipeline (`apply_theme`, `apply_source_style`, `apply_css`).
 - File load path (`notes_window_load_file`) with a 5 MB display cap and binary detection.
+- External file watch (`start_file_watch` / `reload_with_cursor`) using `GFileMonitor`. Reloads on disk changes when the buffer is clean and the on-disk content hash differs from `original_hash`; cursor line is preserved. Skipped for SFTP mounts.
 - SSH remote open/save wrappers.
 - Dirty-state tracking via FNV-1a hash of buffer text against `original_content`.
 - Ctrl+scroll zoom controller for the editor.
@@ -42,7 +43,7 @@ Menu/action callbacks and modal dialogs:
 
 - File: new, open, save, save-as, quit.
 - Edit: find, replace, goto line, zoom in/out.
-- Settings dialog: font pickers, theme dropdown, line-spacing dropdown, line-numbers / current-line / wrap / syntax / preview-full-width toggles, font-intensity slider.
+- Settings dialog: font pickers, theme dropdown, line-spacing dropdown, line-numbers / current-line / wrap / syntax / preview-full-width / reload-on-file-change / disable-preview-gpu toggles, font-intensity slider, preview font size.
 - SFTP connection manager and remote file browser.
 
 ### `preview.c`
@@ -53,6 +54,7 @@ WebKit-based live markdown preview:
 - `preview_apply_theme` follows Adwaita's dark mode or the user's theme override.
 - `preview_apply_layout` toggles `html.full` (left-aligned) vs centered.
 - `preview_apply_font_size` sets WebKit zoom level from `settings.preview_font_size`.
+- GPU compositing honours `settings.disable_gpu`: when set, `webkit_settings_set_hardware_acceleration_policy(…NEVER)` forces software rendering. Works around nvidia/Wayland GBM buffer failures where the DOM is populated but the view is never composited. Change requires an app restart (setting is read once at webview creation).
 - Find bar (GtkBox at top of preview page) driven by `WebKitFindController`, shown on Ctrl+F when preview is visible.
 - `preview_export_pdf` injects a `@media print { @page { @bottom-center { content: … } } }` style tag based on `pdf_page_numbers` setting, then drives `webkit_print_operation_print` with a `GtkPageSetup` built from margin/landscape settings.
 - Ctrl+scroll zoom controller on the webview (CAPTURE phase to preempt WebKit's own handler); persists to `preview_font_size`.
@@ -85,7 +87,10 @@ Flat key=value config files in `~/.config/notes-md/`:
 `save_local_file` / `save_remote_file` write bytes, recompute `original_hash`, clear `dirty`, update title.
 
 ### Preview
-Every buffer change in preview-visible mode schedules `update_timeout_cb` (250 ms debounce) → JSON-escape buffer text → `webkit_web_view_evaluate_javascript("window.nmdRender(...)")`.
+Every buffer change in preview-visible mode schedules `update_timeout_cb` (250 ms debounce) → JSON-escape buffer text → `webkit_web_view_evaluate_javascript("window.nmdRender(...)")`. `nmdRender` runs `marked` + Mermaid + MathJax, and on the software-rendering path ends with a `display:none` → reflow → `display:''` toggle so off-screen math blocks are painted up-front instead of only when scrolled into view.
+
+### External file reload
+`GFileMonitor` fires `CHANGES_DONE_HINT` / `CREATED` / `RENAMED` → 150 ms debounce → `reload_with_cursor`. Reload is skipped when the buffer is dirty (preserves edits) or when `fnv1a_hash(on_disk) == original_hash` (self-save echo). Cursor line is captured before the reload and restored after.
 
 ## Build system
 

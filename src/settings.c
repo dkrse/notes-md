@@ -36,6 +36,8 @@ void settings_load(NotesSettings *s) {
     s->highlight_syntax = TRUE;
     s->preview_full_width = FALSE;
     s->preview_font_size = 14;
+    s->watch_file = TRUE;
+    s->disable_gpu = TRUE;
     s->pdf_margin_top = 20.0;
     s->pdf_margin_bottom = 20.0;
     s->pdf_margin_left = 20.0;
@@ -95,6 +97,10 @@ void settings_load(NotesSettings *s) {
         else if (strcmp(key, "preview_font_size") == 0) {
             int v = atoi(val); if (v >= 6 && v <= 72) s->preview_font_size = v;
         }
+        else if (strcmp(key, "watch_file") == 0)
+            s->watch_file = (strcmp(val, "1") == 0);
+        else if (strcmp(key, "disable_gpu") == 0)
+            s->disable_gpu = (strcmp(val, "1") == 0);
         else if (strcmp(key, "pdf_margin_top") == 0)
             s->pdf_margin_top = CLAMP(g_ascii_strtod(val, NULL), 0.0, 100.0);
         else if (strcmp(key, "pdf_margin_bottom") == 0)
@@ -227,6 +233,8 @@ void settings_save(const NotesSettings *s) {
     fprintf(f, "highlight_syntax=%d\n", s->highlight_syntax);
     fprintf(f, "preview_full_width=%d\n", s->preview_full_width);
     fprintf(f, "preview_font_size=%d\n", s->preview_font_size);
+    fprintf(f, "watch_file=%d\n", s->watch_file);
+    fprintf(f, "disable_gpu=%d\n", s->disable_gpu);
     char buf_mt[32], buf_mb[32], buf_ml[32], buf_mr[32];
     g_ascii_formatd(buf_mt, sizeof(buf_mt), "%.1f", s->pdf_margin_top);
     g_ascii_formatd(buf_mb, sizeof(buf_mb), "%.1f", s->pdf_margin_bottom);

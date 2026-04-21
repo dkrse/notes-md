@@ -331,6 +331,16 @@ static void on_preview_full_width_toggled(GtkCheckButton *btn, gpointer data) {
     win->settings.preview_full_width = gtk_check_button_get_active(btn);
 }
 
+static void on_watch_file_toggled(GtkCheckButton *btn, gpointer data) {
+    NotesWindow *win = data;
+    win->settings.watch_file = gtk_check_button_get_active(btn);
+}
+
+static void on_disable_gpu_toggled(GtkCheckButton *btn, gpointer data) {
+    NotesWindow *win = data;
+    win->settings.disable_gpu = gtk_check_button_get_active(btn);
+}
+
 static void on_preview_font_size_changed(GtkSpinButton *btn, gpointer data) {
     NotesWindow *win = data;
     win->settings.preview_font_size = (int)gtk_spin_button_get_value(btn);
@@ -520,6 +530,20 @@ static void on_settings(GSimpleAction *action, GVariant *param, gpointer data) {
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(pvfs_spin), win->settings.preview_font_size);
     g_signal_connect(pvfs_spin, "value-changed", G_CALLBACK(on_preview_font_size_changed), win);
     gtk_grid_attach(GTK_GRID(grid), pvfs_spin, 1, row++, 1, 1);
+
+    /* Watch file for external changes */
+    gtk_grid_attach(GTK_GRID(grid), gtk_label_new("Reload on File Change:"), 0, row, 1, 1);
+    GtkWidget *wf_check = gtk_check_button_new();
+    gtk_check_button_set_active(GTK_CHECK_BUTTON(wf_check), win->settings.watch_file);
+    g_signal_connect(wf_check, "toggled", G_CALLBACK(on_watch_file_toggled), win);
+    gtk_grid_attach(GTK_GRID(grid), wf_check, 1, row++, 1, 1);
+
+    /* Disable GPU compositing (workaround for broken drivers; requires restart to apply) */
+    gtk_grid_attach(GTK_GRID(grid), gtk_label_new("Disable Preview GPU:"), 0, row, 1, 1);
+    GtkWidget *dg_check = gtk_check_button_new();
+    gtk_check_button_set_active(GTK_CHECK_BUTTON(dg_check), win->settings.disable_gpu);
+    g_signal_connect(dg_check, "toggled", G_CALLBACK(on_disable_gpu_toggled), win);
+    gtk_grid_attach(GTK_GRID(grid), dg_check, 1, row++, 1, 1);
 
     /* ── PDF tab ── */
     GtkWidget *pdf_grid = gtk_grid_new();

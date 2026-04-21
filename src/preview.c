@@ -401,6 +401,12 @@ void preview_init(NotesWindow *win) {
     webkit_settings_set_allow_file_access_from_file_urls(wset, TRUE);
     webkit_settings_set_allow_universal_access_from_file_urls(wset, TRUE);
     webkit_settings_set_enable_write_console_messages_to_stdout(wset, TRUE);
+    if (win->settings.disable_gpu) {
+        /* Workaround for broken GPU drivers (e.g. nvidia/Wayland GBM buffer failures)
+           — forces software rendering at the cost of off-screen repaint snappiness. */
+        webkit_settings_set_hardware_acceleration_policy(wset,
+            WEBKIT_HARDWARE_ACCELERATION_POLICY_NEVER);
+    }
 
     GtkWidget *wv = webkit_web_view_new();
     webkit_web_view_set_settings(WEBKIT_WEB_VIEW(wv), wset);

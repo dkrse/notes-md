@@ -16,6 +16,8 @@ GTK 4 / libadwaita markdown editor written in C with live WebKit preview, GtkSou
 - Preview alignment: centered or full-width (left-aligned)
 - Preview font size setting (independent from editor)
 - Find-in-preview (Ctrl+F in preview mode) via WebKit find controller
+- External file watch — auto-reload when the file changes on disk (skipped while you have unsaved edits; toggleable in Settings)
+- Preview GPU compositing toggle — software-renderer fallback for broken GPU drivers (nvidia/Wayland)
 - PDF export with configurable margins, landscape/portrait, and page numbers
 - Persistent per-user settings and SFTP connection profiles
 
