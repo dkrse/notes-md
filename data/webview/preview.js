@@ -52,6 +52,30 @@
     }
     return origCode(code, lang);
   };
+
+  /* Slugify heading text to GitHub-style anchor ids so in-document links
+     like [text](#nadpis) resolve. Track collisions per render. */
+  let slugCounts = {};
+  function slugify(text) {
+    let s = String(text)
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}\s-]/gu, '')
+      .trim()
+      .replace(/\s+/g, '-');
+    if (!s) s = 'section';
+    const n = slugCounts[s] || 0;
+    slugCounts[s] = n + 1;
+    return n === 0 ? s : s + '-' + n;
+  }
+  renderer.heading = function (text, level, raw) {
+    const t = (typeof text === 'object') ? text : { text: text, depth: level, raw: raw };
+    const depth = t.depth || level;
+    const tokens = t.tokens;
+    const inner = tokens ? this.parser.parseInline(tokens) : (t.text || text);
+    const rawText = t.raw || raw || (typeof text === 'string' ? text : '');
+    const id = slugify(rawText.replace(/<[^>]+>/g, ''));
+    return '<h' + depth + ' id="' + id + '">' + inner + '</h' + depth + '>\n';
+  };
   marked.use({ renderer });
 
   mermaid.initialize({ startOnLoad: false, securityLevel: 'loose', theme: 'default' });
@@ -133,6 +157,7 @@
     if (rendering) { pending = md; return; }
     rendering = true;
     try {
+      slugCounts = {};
       await renderImpl(md);
     } finally {
       rendering = false;
@@ -142,6 +167,22 @@
       }
     }
   }
+
+  /* Anchor link clicks (#slug) don't navigate cleanly because the page URL
+     carries a query string — handle them manually with scrollIntoView. */
+  document.addEventListener('click', function (ev) {
+    let a = ev.target;
+    while (a && a.tagName !== 'A') a = a.parentNode;
+    if (!a) return;
+    const href = a.getAttribute('href');
+    if (!href || href.charAt(0) !== '#') return;
+    const id = decodeURIComponent(href.slice(1));
+    const target = id ? document.getElementById(id) : document.body;
+    if (target) {
+      ev.preventDefault();
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
 
   window.nmdRender = render;
   window.nmdSetTheme = function (dark) {

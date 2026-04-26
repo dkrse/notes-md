@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-04-26
+
+### Fixed
+- **In-document anchor links in preview.** `marked` doesn't emit heading `id` attributes by default, so `[text](#nadpis)` had nothing to scroll to. Added a custom `renderer.heading` in `data/webview/preview.js` that slugifies heading text (lowercase, unicode-letters preserved so diacritics like `č`/`š`/`ť` survive, punctuation stripped, spaces → `-`, per-render collision counter for duplicate headings). Also added a global click handler that intercepts `<a href="#…">` clicks and calls `scrollIntoView` — needed because the preview URL carries `?engine=…` query params, so default anchor navigation would rewrite the URL instead of jumping.
+
+### Known limitation
+- **PDF export does not preserve internal hyperlinks.** WebKitGTK's print path goes through cairo's PDF backend without emitting `CAIRO_TAG_LINK` annotations for `<a href="#…">`, so anchor links render as plain blue text in the exported PDF. This is a WebKitGTK limitation (Blink/Chromium emits them; WebKitGTK does not) shared by other GTK markdown editors (Apostrophe, Marker). Workarounds would require either post-processing the PDF with poppler+cairo to re-add link annotations, or shelling out to headless Chromium / WeasyPrint for the export. Not implemented.
+
 ## 2026-04-21 (2nd pass)
 
 ### Fixed
